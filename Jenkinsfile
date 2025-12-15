@@ -1,34 +1,51 @@
 pipeline {
-    agent any
-
     parameters {
-        string(name: 'VAR_STR', defaultValue: 'Valor por defecto', description: 'lo que sea')
-        choice(name: 'VAR_CHOICE', choices: ['Primera opción', 'Segunda opción', 'Tercera opción'], description: 'lo que sea')
-        booleanParam(name: 'VAR_BOOL', defaultValue: true, description: 'lo que sea')
+        string(
+            name: 'MI_PARAM',
+            defaultValue: '',
+            description: 'Parámetro opcional para el script'
+        )
     }
-
+ 
+    agent any
+ 
     stages {
-        stage('Primer pasito') {
+        stage('Setup') {
             steps {
-                sh 'echo "${VAR_STR}"'
+                sh '''
+                    if [ ! -d "venv" ]; then
+                        echo "Creando entorno virtual..."
+                        python3 -m venv venv
+                    else
+                        echo "Entorno virtual ya existe, reutilizando..."
+                    fi
+ 
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                '''
             }
         }
-
-        stage('Segundo pasito') {
+ 
+        stage('Instalar requirements') {
             steps {
-                sh 'echo "hola gente" > test.txt'
+                sh '''
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                '''
             }
         }
-
-        stage('Tercer pasito') {
+ 
+        stage('Ejecutar script') {
             steps {
-                sh 'cat test.txt'
-            }
-        }
-
-        stage('Ejecutar script Python') {
-            steps {
-                sh 'python3 script.py'
+                sh '''
+                    . venv/bin/activate
+ 
+                    if [ -n "$MI_PARAM" ]; then
+                        python3 main.py "$MI_PARAM"
+                    else
+                        python3 main.py
+                    fi
+                '''
             }
         }
     }
