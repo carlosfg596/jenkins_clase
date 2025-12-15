@@ -1,52 +1,71 @@
 pipeline {
+    agent any
+
     parameters {
         string(
-            name: 'MI_PARAM',
-            defaultValue: '',
-            description: 'Parámetro opcional para el script'
+            name: 'VAR_STR',
+            defaultValue: 'Valor por defecto',
+            description: 'Parámetro string'
+        )
+        choice(
+            name: 'VAR_CHOICE',
+            choices: ['Primera opción', 'Segunda opción', 'Tercera opción'],
+            description: 'Parámetro choice'
+        )
+        booleanParam(
+            name: 'VAR_BOOL',
+            defaultValue: true,
+            description: 'Parámetro boolean'
         )
     }
- 
-    agent any
- 
+
     stages {
-        stage('Setup') {
+
+        stage('Primer pasito') {
+            steps {
+                sh 'echo "${VAR_STR}"'
+            }
+        }
+
+        stage('Segundo pasito') {
+            steps {
+                sh 'echo "hola gente" > test.txt'
+            }
+        }
+
+        stage('Tercer pasito') {
+            steps {
+                sh 'cat test.txt'
+            }
+        }
+
+        stage('Preparar entorno Python') {
             steps {
                 sh '''
-                    if [ ! -d "venv" ]; then
-                        echo "Creando entorno virtual..."
-                        python3 -m venv venv
-                    else
-                        echo "Entorno virtual ya existe, reutilizando..."
-                    fi
- 
+                    echo "Creando entorno virtual..."
+                    python3 -m venv venv
                     . venv/bin/activate
-                    pip install --upgrade pip
+                    python --version
                 '''
             }
         }
- 
-        stage('Instalar requirements') {
+
+        stage('Ejecutar script Python') {
             steps {
                 sh '''
                     . venv/bin/activate
-                    pip install -r requirements.txt
+                    python script.py
                 '''
             }
         }
- 
-        stage('Ejecutar script') {
-            steps {
-                sh '''
-                    . venv/bin/activate
- 
-                    if [ -n "$MI_PARAM" ]; then
-                        python3 main.py "$MI_PARAM"
-                    else
-                        python3 main.py
-                    fi
-                '''
-            }
+    }
+
+    post {
+        success {
+            echo 'Pipeline ejecutado correctamente ✅'
+        }
+        failure {
+            echo 'Pipeline falló ❌'
         }
     }
 }
